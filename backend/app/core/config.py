@@ -1,0 +1,172 @@
+"""
+Application configuration using Pydantic V2 BaseSettings.
+
+This module provides centralized configuration management for the platform,
+loading settings from environment variables and .env files with strict typing.
+
+Innovation: Configuration supports probabilistic engine parameters like
+default iteration counts and confidence interval thresholds.
+"""
+
+from functools import lru_cache
+from typing import Literal
+
+from pydantic import Field, PostgresDsn, RedisDsn, computed_field
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    """
+    Application settings with strict typing and environment variable support.
+
+    All settings can be overridden via environment variables or .env file.
+    Supports Docker Compose environment variable interpolation.
+    """
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+        extra="ignore",
+    )
+
+    # Application
+    app_name: str = Field(
+        default="Probabilistic LLM Analytics Platform",
+        description="Application display name",
+    )
+    app_version: str = Field(default="0.1.0", description="Application version")
+    environment: Literal["development", "staging", "production"] = Field(
+        default="development",
+        description="Deployment environment",
+    )
+    debug: bool = Field(default=False, description="Enable debug mode")
+
+    # API Configuration
+    api_v1_prefix: str = Field(default="/api/v1", description="API version 1 prefix")
+
+    # PostgreSQL Configuration
+    postgres_user: str = Field(default="ai_visibility", description="PostgreSQL username")
+    postgres_password: str = Field(
+        default="ai_visibility_secret",
+        description="PostgreSQL password",
+    )
+    postgres_host: str = Field(default="localhost", description="PostgreSQL host")
+    postgres_port: int = Field(default=5432, description="PostgreSQL port")
+    postgres_db: str = Field(default="ai_visibility_db", description="PostgreSQL database name")
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def database_url(self) -> PostgresDsn:
+        """Construct PostgreSQL connection URL from components."""
+        return PostgresDsn.build(
+            scheme="postgresql+asyncpg",
+            username=self.postgres_user,
+            password=self.postgres_password,
+            host=self.postgres_host,
+            port=self.postgres_port,
+            path=self.postgres_db,
+        )
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def database_url_sync(self) -> PostgresDsn:
+        """Construct synchronous PostgreSQL connection URL for Alembic migrations."""
+        return PostgresDsn.build(
+            scheme="postgresql+psycopg2",
+            username=self.postgres_user,
+            password=self.postgres_password,
+            host=self.postgres_host,
+            port=self.postgres_port,
+            path=self.postgres_db,
+        )
+
+    # Redis Configuration
+    redis_host: str = Field(default="localhost", description="Redis host")
+    redis_port: int = Field(default=6379, description="Redis port")
+    redis_password: str = Field(default="redis_secret", description="Redis password")
+    redis_db: int = Field(default=0, description="Redis database number")
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def redis_url(self) -> RedisDsn:
+        """Construct Redis connection URL from components."""
+        return RedisDsn.build(
+            scheme="redis",
+            password=self.redis_password,
+            host=self.redis_host,
+            port=self.redis_port,
+            path=str(self.redis_db),
+        )
+
+    # Probabilistic Engine Configuration
+    # Innovation: These parameters control the Monte Carlo simulation behavior
+    default_iterations: int = Field(
+        default=10,
+        ge=1,
+        le=100,
+        description="Default number of iterations for probabilistic queries",
+    )
+    max_iterations: int = Field(
+        default=100,
+        ge=1,
+        le=1000,
+        description="Maximum allowed iterations per experiment",
+    )
+    confidence_level: float = Field(
+        default=0.95,
+        ge=0.80,
+        le=0.99,
+        description="Confidence level for statistical intervals",
+    )
+
+    # LLM Provider API Keys (loaded from environment)
+    openai_api_key: str | None = Field(default=None, description="OpenAI API key")
+    anthropic_api_key: str | None = Field(default=None, description="Anthropic API key")
+    perplexity_api_key: str | None = Field(default=None, description="Perplexity API key")
+
+    # Rate Limiting
+    rate_limit_requests: int = Field(
+        default=100,
+        description="Maximum requests per minute per provider",
+    )
+    rate_limit_window_seconds: int = Field(
+        default=60,
+        description="Rate limit window in seconds",
+    )
+
+    # Celery Configuration
+    celery_broker_url: str | None = Field(
+        default=None,
+        description="Celery broker URL (defaults to Redis URL if not set)",
+    )
+    celery_result_backend: str | None = Field(
+        default=None,
+        description="Celery result backend URL (defaults to Redis URL if not set)",
+    )
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def celery_broker(self) -> str:
+        """Get Celery broker URL, defaulting to Redis URL."""
+        return self.celery_broker_url or str(self.redis_url)
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def celery_backend(self) -> str:
+        """Get Celery result backend URL, defaulting to Redis URL."""
+        return self.celery_result_backend or str(self.redis_url)
+
+
+@lru_cache
+def get_settings() -> Settings:
+    """
+    Get cached application settings instance.
+
+    Uses LRU cache to ensure settings are only loaded once per process.
+    This is the recommended way to access settings throughout the application.
+
+    Returns:
+        Settings: The application settings instance.
+    """
+    return Settings()
