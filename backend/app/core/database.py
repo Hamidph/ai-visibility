@@ -129,3 +129,6 @@ async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
 
 # Type alias for dependency injection
 DbSession = Annotated[AsyncSession, Depends(get_db_session)]
+
+# Backward compatibility alias
+get_db = get_db_session
