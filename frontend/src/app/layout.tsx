@@ -1,22 +1,46 @@
-import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
-import './globals.css'
+import type { Metadata } from "next";
+import { Outfit, Syne } from "next/font/google";
+import "./globals.css";
+import { Providers } from "./providers";
 
-const inter = Inter({ subsets: ['latin'] })
+const outfit = Outfit({
+  subsets: ["latin"],
+  variable: "--font-outfit",
+});
+
+const syne = Syne({
+  subsets: ["latin"],
+  variable: "--font-syne",
+});
 
 export const metadata: Metadata = {
-  title: 'AI Visibility - Probabilistic LLM Analytics Platform',
-  description: 'Measure brand visibility across AI platforms with statistical significance',
-}
+  title: "Brandwise | AI Search Analytics for Marketing Teams",
+  description:
+    "Track, analyze, and improve your brand performance on AI search platforms through key metrics like Visibility, Position, and Sentiment.",
+  keywords: [
+    "AI",
+    "LLM",
+    "Brand Visibility",
+    "Analytics",
+    "SEO",
+    "AI Optimization",
+    "Brand Intelligence",
+    "ChatGPT",
+    "Perplexity",
+    "Marketing",
+  ],
+};
 
 export default function RootLayout({
   children,
-}: {
-  children: React.ReactNode
-}) {
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   return (
-    <html lang="en">
-      <body className={inter.className}>{children}</body>
+    <html lang="en" className={`${outfit.variable} ${syne.variable}`}>
+      <body className="font-sans antialiased">
+        <Providers>{children}</Providers>
+      </body>
     </html>
-  )
+  );
 }
