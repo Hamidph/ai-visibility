@@ -32,7 +32,7 @@ class Settings(BaseSettings):
 
     # Application
     app_name: str = Field(
-        default="Probabilistic LLM Analytics Platform",
+        default="Echo AI - AI Search Analytics Platform",
         description="Application display name",
     )
     app_version: str = Field(default="0.1.0", description="Application version")

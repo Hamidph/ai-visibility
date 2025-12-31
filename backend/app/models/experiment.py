@@ -82,6 +82,13 @@ class Experiment(Base):
         primary_key=True,
         default=uuid4,
     )
+    user_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+        comment="User who created this experiment",
+    )
     prompt: Mapped[str] = mapped_column(
         Text,
         nullable=False,
@@ -135,6 +142,11 @@ class Experiment(Base):
     )
 
     # Relationships
+    user: Mapped["User"] = relationship(
+        "User",
+        back_populates="experiments",
+        lazy="joined",
+    )
     batch_runs: Mapped[list["BatchRun"]] = relationship(
         "BatchRun",
         back_populates="experiment",
@@ -146,6 +158,9 @@ class Experiment(Base):
     __table_args__ = (
         Index("ix_experiments_created_at", "created_at"),
         Index("ix_experiments_status_created", "status", "created_at"),
+        Index("ix_experiments_user_id", "user_id"),
+        Index("ix_experiments_user_status", "user_id", "status"),
+        Index("ix_experiments_user_created", "user_id", "created_at"),
     )
 
 

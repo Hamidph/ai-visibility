@@ -14,7 +14,7 @@ const syne = Syne({
 });
 
 export const metadata: Metadata = {
-  title: "Brandwise | AI Search Analytics for Marketing Teams",
+  title: "Echo AI | AI Search Analytics for Marketing Teams",
   description:
     "Track, analyze, and improve your brand performance on AI search platforms through key metrics like Visibility, Position, and Sentiment.",
   keywords: [

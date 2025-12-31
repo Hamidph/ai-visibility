@@ -49,6 +49,7 @@ class ExperimentRepository:
 
     async def create_experiment(
         self,
+        user_id: UUID,
         prompt: str,
         target_brand: str,
         config: dict[str, Any],
@@ -59,6 +60,7 @@ class ExperimentRepository:
         Create a new experiment.
 
         Args:
+            user_id: ID of the user creating this experiment.
             prompt: The prompt to analyze.
             target_brand: Primary brand to track visibility for.
             config: Experiment configuration (iterations, temperature, etc.).
@@ -69,6 +71,7 @@ class ExperimentRepository:
             Experiment: The created experiment instance.
         """
         experiment = Experiment(
+            user_id=user_id,
             prompt=prompt,
             target_brand=target_brand,
             competitor_brands=competitor_brands,
@@ -145,22 +148,28 @@ class ExperimentRepository:
 
     async def list_experiments(
         self,
+        user_id: UUID,
         limit: int = 50,
         offset: int = 0,
         status: ExperimentStatus | None = None,
     ) -> list[Experiment]:
         """
-        List experiments with pagination and optional status filter.
+        List experiments for a specific user with pagination and optional status filter.
 
         Args:
+            user_id: Filter experiments by this user ID.
             limit: Maximum number of experiments to return.
             offset: Number of experiments to skip.
             status: Optional status filter.
 
         Returns:
-            List of experiments.
+            List of experiments belonging to the user.
         """
-        stmt = select(Experiment).order_by(Experiment.created_at.desc())
+        stmt = (
+            select(Experiment)
+            .where(Experiment.user_id == user_id)
+            .order_by(Experiment.created_at.desc())
+        )
 
         if status:
             stmt = stmt.where(Experiment.status == status.value)
@@ -168,6 +177,28 @@ class ExperimentRepository:
         stmt = stmt.limit(limit).offset(offset)
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
+
+    async def get_experiment_by_user(
+        self,
+        experiment_id: UUID,
+        user_id: UUID,
+    ) -> Experiment | None:
+        """
+        Get an experiment by ID, ensuring it belongs to the specified user.
+
+        Args:
+            experiment_id: The experiment UUID.
+            user_id: The user UUID who should own this experiment.
+
+        Returns:
+            Experiment or None if not found or doesn't belong to user.
+        """
+        stmt = select(Experiment).where(
+            Experiment.id == experiment_id,
+            Experiment.user_id == user_id,
+        )
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
 
 
 class BatchRunRepository:

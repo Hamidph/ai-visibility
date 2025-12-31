@@ -92,8 +92,8 @@ def create_application() -> FastAPI:
         title=settings.app_name,
         version=settings.app_version,
         description=(
-            "Probabilistic LLM Analytics Platform - "
-            "Monte Carlo simulation for brand visibility analysis across LLM providers"
+            "Echo AI - AI Search Analytics Platform - "
+            "Monte Carlo simulation for brand visibility analysis across AI search platforms"
         ),
         lifespan=lifespan,
         debug=settings.debug,
@@ -107,9 +107,18 @@ def create_application() -> FastAPI:
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
     # Configure CORS
+    # In development, allow all origins. In production, use frontend_url from settings
+    allowed_origins = (
+        ["*"]
+        if settings.environment == "development"
+        else [
+            settings.frontend_url,
+            "https://echo-ai.vercel.app",  # Add your production frontend URL
+        ]
+    )
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"] if settings.environment == "development" else [],
+        allow_origins=allowed_origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

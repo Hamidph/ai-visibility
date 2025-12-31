@@ -13,9 +13,13 @@ import logging
 from typing import Any
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Query, status
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from backend.app.core.database import DbSession
+from backend.app.core.deps import get_current_active_user
+from backend.app.models.user import User
 from backend.app.models.experiment import ExperimentStatus
 from backend.app.repositories.experiment_repo import (
     ExperimentRepository,
@@ -61,6 +65,7 @@ logger = logging.getLogger(__name__)
 async def create_experiment(
     request: ExperimentRequest,
     session: DbSession,
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ) -> ExperimentResponse:
     """
     Create a new visibility experiment.
@@ -68,11 +73,14 @@ async def create_experiment(
     Args:
         request: Experiment configuration.
         session: Database session.
+        current_user: Authenticated user creating the experiment.
 
     Returns:
         ExperimentResponse with experiment ID and job ID.
     """
-    logger.info(f"Creating experiment for brand '{request.target_brand}'")
+    logger.info(
+        f"User {current_user.email} creating experiment for brand '{request.target_brand}'"
+    )
 
     # Build configuration dictionary
     config: dict[str, Any] = {
@@ -88,6 +96,7 @@ async def create_experiment(
     # Create experiment in database
     exp_repo = ExperimentRepository(session)
     experiment = await exp_repo.create_experiment(
+        user_id=current_user.id,
         prompt=request.prompt,
         target_brand=request.target_brand,
         config=config,
@@ -129,6 +138,7 @@ async def create_experiment(
 async def get_experiment(
     experiment_id: UUID,
     session: DbSession,
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ) -> ExperimentStatusResponse:
     """
     Get experiment status and results.
@@ -136,6 +146,7 @@ async def get_experiment(
     Args:
         experiment_id: The experiment UUID.
         session: Database session.
+        current_user: Authenticated user requesting the experiment.
 
     Returns:
         ExperimentStatusResponse with status and metrics.

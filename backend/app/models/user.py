@@ -142,6 +142,11 @@ class User(Base):
         back_populates="user",
         cascade="all, delete-orphan",
     )
+    experiments: Mapped[list["Experiment"]] = relationship(
+        "Experiment",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
 
     __table_args__ = (
         Index("ix_users_pricing_tier", "pricing_tier"),

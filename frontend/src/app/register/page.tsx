@@ -47,9 +47,9 @@ export default function RegisterPage() {
         <div className="relative flex flex-col justify-center px-12 xl:px-20">
           <Link href="/" className="flex items-center gap-3 mb-12">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-violet-500 flex items-center justify-center">
-              <span className="text-white font-bold text-lg">BW</span>
+              <span className="text-white font-bold text-lg">ECHO</span>
             </div>
-            <span className="font-display font-bold text-2xl text-white">Brandwise</span>
+            <span className="font-display font-bold text-2xl text-white">Echo AI</span>
           </Link>
           
           <h1 className="font-display text-4xl xl:text-5xl font-bold text-white mb-6 leading-tight">
